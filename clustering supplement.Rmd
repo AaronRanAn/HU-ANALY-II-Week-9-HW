@@ -1,0 +1,74 @@
+---
+title: "Clustering_supplement"
+author: "James Muguira"
+date: "April 29, 2016"
+output: 
+  html_document: 
+    highlight: haddock
+    theme: cosmo
+---
+
+# Synopsis
+
+In many situations, understanding how the data in a dataset group together is important.  For example, in the mtcars dataset there are 32 different car types analyzed. Cluster analysis on the miles per gallon (mpg) column reveals that mpg can be best grouped into 6 classes. 
+
+Cluster analysis is an unsupervised data mining technique used to discover patterns in data. It works by repeatedly applying an optimization function to a dataset in an effort to separate and group inherit features of that data.  This essay will discuss kmeans clustering to provide a concrete example. Kmeans uses a squared error function as the optimization objective.  This implies that it is sensitive to outliers and to the specifics of the features in the data. Regression is very similar in its sensitivities.
+
+# Methods
+
+This essay will present the idea of clustering with a simple purpose built example. From there the essay will analyze the R built in dataset “rivers”. The purpose built example serves to demonstrate the mechanics of using the kmeans command.  The rivers dataset describes the lengths (in miles) of 141 "major" rivers (see ?rivers). It is analyzed to determine if the lengths of the major rivers in North America exhibit clustering.
+
+This first example will create a 50x2 matrix of numbers that have been manipulated so that it contains 2 well definied groups. We'll plot the raw data and the clustered data.
+
+```{r}
+set.seed(42) # set the starting point for the random number sequence
+m = matrix(rnorm(50*2), ncol=2)
+m[1:25,1] = m[1:25,1]+3
+m[1:25,2] = m[1:25,2]-4
+# plot the raw data
+plot(m[,1], m[,2])
+```
+
+Notice that the first column has had 3 added to each item and that column 2 has had 4 subtracted.  We can use the kmeans command to "find" these clusters. 
+
+```{r}
+km.c = kmeans(m, centers=2, nstart=20)
+plot(m, col=(km.c$cluster + 1), xlab="", ylab="", main="Kmeans with k=2", pch=20, cex=2)
+```
+
+The 'col' option in the plot function changes the colors of the points.  I shift the colors to green and red.  I use the 'pch' and 'cex' to change the size of the plotted points.  The nstart option uses 20 different initial configurations of the centroid.  The kmeans algorithm starts its computation by choosing a random location for the centroid and minimizing the distance of each point to that centroid. The nstart command chooses n different starting locations, tries each in parallel and reports the best location.
+
+# Analysis
+
+Now, let's turn to the rivers dataset. First, let's plot the length of each river.
+
+```{r}
+plot(1:length(rivers), rivers, ylab="river length in miles")
+```
+
+Nothing obvious here! Let's look for a clustering within the rivers dataset.  We'll use the following bit of code to find the best cluster value. This bit of code will call the kmeans algorithm, setting the centers value from 2 to 10.
+
+```{r}
+wi = 0
+# loop: remembering each within cluster sum of squares
+for (i in 2:10) {
+  z = kmeans(rivers, i)
+  wi[i-1] = z$betweenss / z$totss
+}
+# report the list of within cluster sum of squares
+plot(2:10, wi, type='l', xlab="k=2:10", ylab="Within Sum of Squares")
+```
+
+The "withinss" or 'within sum of squares' value goes aysmptotic at k=3. This implies that the rivers of North America cluster or group into 3 length clusters (maybe 4). The next block of code shows the number of rivers in each cluster and the mean length for each cluster.
+
+```{r}
+r = kmeans(rivers, centers =3, nstart=20)
+# show the number of rivers in each cluster
+r$size
+# show the mean length, in miles, of a river in each cluster
+r$centers
+```
+
+# Conclusion
+
+Cluster analysis is an unsupervised machine learning technique used to find patterns in data. The technique uses an input (a guess) or 'number of centers' to find the number of cluster in the data.  Choosing that input can be some what of an art as demonstrated in this essay. We show that the R built in dataset rivers, which records the lengths of 141 major rivers in North America clusters to 3 or maybe 4 different lengths.

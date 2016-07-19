@@ -1,0 +1,129 @@
+---
+title: "Clustering Homework"
+author: "Aaron"
+date: "July 18, 2016"
+output: 
+  html_document: 
+    highlight: haddock
+    theme: cosmo
+---
+
+```{r setup, include=FALSE, message=FALSE, warning=F}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Homework Assignment: 
+
+- Using the mtcars data set
+- Create a kmeans object from the first, second, and third columns
+- What is the size of each cluster?
+- What are the centers of each cluster?
+- What is the average disp, wt, and qsec of each cluster?
+- Describe each cluster in English. 
+
+```{r message=F, warning=F}
+
+data("mtcars")
+
+library(dplyr)
+library(knitr)
+library(ggplot2)
+library(GGally)
+
+```
+
+First we need to determine how many clusters to create. 
+
+```{r}
+set.seed(1234)
+wi = 0
+
+for (i in 2:10) {
+  z = kmeans(mtcars[,1:3], i)
+  wi[i-1] = z$betweenss / z$totss
+}
+# report the list of within cluster sum of squares
+plot(2:10, wi, type='l', xlab="k=2:10", ylab="Within Sum of Squares")
+
+```
+
+The “withinss” or ‘within sum of squares’ value goes aysmptotic at k=**4**. This implies that with the three columns in the `mtcars` data set, the cars can be grouped into 4 groups. 
+
+### Create a kmeans object from the first, second, and third columns
+
+What is the size of each cluster?
+
+
+```{r}
+
+r = kmeans(mtcars[,1:3], centers =4, nstart=20)
+
+r$size
+
+```
+
+The size of those 4 clusters are 8, 4,9 and 11.
+
+### What are the centers of each cluster?
+
+```{r}
+
+r$centers
+
+```
+
+### What is the average disp, wt, and qsec of each cluster?
+
+For this task, we should derive the cluster labels as an aggregation dimension for the data set. 
+
+```{r}
+
+mtcars %>% 
+    mutate(clusters = r$cluster) %>% 
+    group_by(clusters) %>% 
+    summarise_each(funs(mean), c(disp, wt, qsec)) %>% kable()
+
+```
+
+### Describe each cluster in English. 
+
+Cluster 1: cars that have medium disp, medium mpg and cyl. 
+
+<br>
+
+Cluster 2: cars that have highest disp, lowest mpg. 
+
+<br>
+
+Cluster 3: car that have lowest disp, highest mpg. 
+
+<br>
+
+Cluster 4: cars that have medium to high disp, low mpg and highest cyl. 
+
+<br>
+
+
+Visually describe all the clusters:
+
+```{r fig.height= 7, fig.width= 9, message=F, warning=F}
+
+mtcars %>% 
+    mutate(cluster = as.factor(r$cluster)) %>% 
+    select(c(cluster, disp, wt, qsec)) %>% 
+    ggpairs(mapping = aes(color = cluster))
+
+```
+
+
+
+```{r fig.height= 7, fig.width= 9, message=F, warning=F}
+
+mtcars %>% 
+    mutate(cluster = as.factor(r$cluster)) %>% 
+    select(c(cluster, disp, mpg, cyl, disp)) %>% 
+    ggpairs(mapping = aes(color = cluster))
+
+```
+
+
